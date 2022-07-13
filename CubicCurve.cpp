@@ -10,6 +10,7 @@
 
 std::array<float, 2> CubicCurve::interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const std::array<float, 2> & c, const std::array<float, 2> & d, const float & parametric_t)
 {
+    // lerp p0(a), p1(b) and p1(b), p2(c) which will result in pq0(q0)
     float x0 = std::lerp(a[0], b[0], parametric_t);
     float y0 = std::lerp(a[1], b[1], parametric_t);
 
@@ -19,6 +20,7 @@ std::array<float, 2> CubicCurve::interpolate(const std::array<float, 2>  & a, co
     float xq0 = std::lerp(x0, x1, parametric_t);
     float yq0 = std::lerp(y0, y1, parametric_t);
 
+    // lerp p1(b), p2(c) and p2(c), p3(d) which will result in pq1(q1)
     float x2 = std::lerp(b[0], c[0], parametric_t);
     float y2 = std::lerp(b[1], c[1], parametric_t);
 
@@ -28,13 +30,15 @@ std::array<float, 2> CubicCurve::interpolate(const std::array<float, 2>  & a, co
     float xq1 = std::lerp(x2, x3, parametric_t);
     float yq1 = std::lerp(y2, y3, parametric_t);
 
-    float xc = std::lerp(xq0, xq1, parametric_t);
-    float yc = std::lerp(yq0, yq1, parametric_t);
+    // lerp the results of pq0(q0) and pq1(q1) which results in pc
+    float xpc = std::lerp(xq0, xq1, parametric_t);
+    float ypc = std::lerp(yq0, yq1, parametric_t);
 
-    return {xc, yc};
+    // point result on cubic curve
+    return {xpc, ypc};
 }
 
-void CubicCurve::InterpolatePoint()
+void CubicCurve::InterpolatePoints()
 {
     constexpr size_t min_points = 4;
     if (pointList.size() >= min_points)
@@ -106,7 +110,7 @@ CubicCurve::CubicCurve()
 void CubicCurve::AddPoint(std::array<float, 2> point)
 {
     this->pointList.push_back(point);
-    InterpolatePoint();
+    InterpolatePoints();
 }
 
 void CubicCurve::AddAnchor(std::array<float, 2> point)
@@ -115,7 +119,7 @@ void CubicCurve::AddAnchor(std::array<float, 2> point)
     AddPoint(point); // control_point
     AddPoint(point); // control_point
     AddPoint(point); // new anchor point
-     InterpolatePoint();
+     InterpolatePoints();
     */
 }
 

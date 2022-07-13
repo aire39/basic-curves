@@ -6,10 +6,10 @@
 class CubicCurve : public Curve
 {
     private:
-        std::array<float, 2> interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const std::array<float, 2> & c, const std::array<float, 2> & d, const float & parametric_t);
+        static std::array<float, 2> interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const std::array<float, 2> & c, const std::array<float, 2> & d, const float & parametric_t);
 
     protected:
-        void InterpolatePoint() override;
+        void InterpolatePoints() override;
 
     public:
         CubicCurve();

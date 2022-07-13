@@ -17,7 +17,7 @@ class Curve
 
         float smoothFactor = 1.0f;
 
-        virtual void InterpolatePoint() = 0;
+        virtual void InterpolatePoints() = 0;
 
     public:
         virtual void AddPoint(std::array<float, 2> point) = 0;
