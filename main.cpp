@@ -1,6 +1,7 @@
 #include <string>
 #include <cstdint>
 #include <limits>
+#include <iostream>
 
 #include <SFML/Window.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
@@ -9,6 +10,8 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/ConvexShape.hpp>
 #include <SFML/Window/Mouse.hpp>
+
+#include "CubicCurve.h"
 
 enum class CURVE_TYPE {NONE, POINTS, LINEAR, QUADRATIC, CUBIC};
 
@@ -116,6 +119,10 @@ int main(int argc, char*argv[])
     // window/drawing loop
 
     uint32_t n_frames = 0;
+
+    //
+
+    CubicCurve cubic_curve;
 
     while (window.isOpen())
     {
@@ -256,6 +263,8 @@ int main(int argc, char*argv[])
                     hover_anim.push_back(0.0f);
                     line_draw_shape.push_back(add_new_point);
 
+                    cubic_curve.AddPoint({add_new_point.position.x, add_new_point.position.y});
+
                     line_draw_shape[control_point].color = sf::Color::Black; // set last control point color back to white
                     control_point = static_cast<int32_t>(line_draw_shape.size())-1;
                     line_draw_shape[control_point].color = sf::Color(215, 68, 92, 255); // set selected control point color to Blue
@@ -305,12 +314,30 @@ int main(int argc, char*argv[])
         std::vector<sf::Vertex> fill_buffer;
         if (curve_type == CURVE_TYPE::CUBIC)
         {
-            if (!draw_cubic_curve(line_draw_shape, static_cast<float>(curve_samples), window, primitive_type, fill_buffer, hide_points))
-            {
-                txt_line_mode_message_render.setString("Need a minimal of 4 points to draw a cubic bezier curve!");
+            constexpr bool use_new_curves_class = false;
 
-                txt_line_mode_message_render.setPosition((WINDOW_WIDTH - (txt_line_mode_message_render.getLocalBounds().width + 2)) / 2, WINDOW_HEIGHT-30);
+            if constexpr (!use_new_curves_class)
+            {
+                if (!draw_cubic_curve(line_draw_shape, static_cast<float>(curve_samples), window, primitive_type, fill_buffer, hide_points))
+                {
+                    txt_line_mode_message_render.setString("Need a minimal of 4 points to draw a cubic bezier curve!");
+
+                    txt_line_mode_message_render.setPosition((WINDOW_WIDTH - (txt_line_mode_message_render.getLocalBounds().width + 2)) / 2, WINDOW_HEIGHT-30);
+                }
             }
+            else
+            {
+                std::vector<std::array<float,2>> & curve_data = cubic_curve.CurveData();
+                std::vector<sf::Vertex> mvlist;
+
+                for (const auto & p : curve_data)
+                {
+                    mvlist.push_back(sf::Vertex({p[0], p[1]}));
+                }
+
+                window.draw(mvlist.data(), mvlist.size(), sf::PrimitiveType::LineStrip);
+            }
+
         }
         else if (curve_type == CURVE_TYPE::QUADRATIC)
         {

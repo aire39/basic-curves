@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project("basic_bezier_curves")
 
 # set cxx standard
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 set (CMAKE_C_STANDARD 11)
 
 find_package (Threads REQUIRED)
@@ -23,7 +23,9 @@ add_subdirectory(libs/SFML)
 
 add_executable(basic_bezier_curves
                main.cpp
-              )
+               Curve.h
+               CubicCurve.cpp
+               CubicCurve.h)
 
 target_link_libraries(basic_bezier_curves
                       sfml-window
