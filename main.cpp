@@ -13,8 +13,6 @@
 
 #include "CubicCurve.h"
 
-enum class CURVE_TYPE {NONE, POINTS, LINEAR, QUADRATIC, CUBIC};
-
 sf::Vertex linear_curve(sf::Vertex p0, sf::Vertex p1, float t);
 sf::Vertex quadratic_curve(sf::Vertex p0, sf::Vertex p1, sf::Vertex p2, float t);
 sf::Vertex cubic_curve(sf::Vertex p0, sf::Vertex p1, sf::Vertex p2, sf::Vertex p3, float t);
@@ -113,7 +111,7 @@ int main(int argc, char*argv[])
     int32_t control_point = -1;
     int32_t curve_samples = 50;
 
-    CURVE_TYPE curve_type = CURVE_TYPE::NONE;
+    CURVE_TYPE curve_type = CURVE_TYPE::LINEAR;
     bool show_fill = false;
 
     // window/drawing loop
@@ -173,14 +171,12 @@ int main(int argc, char*argv[])
 
                 if (event.key.code == sf::Keyboard::M)
                 {
-                    if (curve_type == CURVE_TYPE::POINTS)
-                        curve_type = CURVE_TYPE::LINEAR;
-                    else if (curve_type == CURVE_TYPE::LINEAR)
+                    if (curve_type == CURVE_TYPE::LINEAR)
                         curve_type = CURVE_TYPE::QUADRATIC;
                     else if (curve_type == CURVE_TYPE::QUADRATIC)
                         curve_type = CURVE_TYPE::CUBIC;
                     else // (curve_type == CURVE_TYPE::CUBIC)
-                        curve_type = CURVE_TYPE::POINTS;
+                        curve_type = CURVE_TYPE::LINEAR;
                 }
 
                 if (event.key.code == sf::Keyboard::B)
@@ -327,7 +323,7 @@ int main(int argc, char*argv[])
             }
             else
             {
-                std::vector<std::array<float,2>> & curve_data = cubic_curve.CurveData();
+                std::vector<std::array<float,2>> curve_data = cubic_curve.Data();
                 std::vector<sf::Vertex> mvlist;
 
                 for (const auto & p : curve_data)
