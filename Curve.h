@@ -3,40 +3,59 @@
 #include <vector>
 #include <array>
 #include <cstdint>
+#include <iostream>
 
-enum class CURVE_TYPE {LINEAR, QUADRATIC, CUBIC};
+enum class CURVE_TYPE : uint16_t {LINEAR, QUADRATIC, CUBIC};
+
+inline std::ostream& operator<<(std::ostream& os, const CURVE_TYPE & curve_type)
+{
+    switch (curve_type)
+    {
+        case CURVE_TYPE::LINEAR:
+            os << "linear";
+            break;
+
+        case CURVE_TYPE::QUADRATIC:
+            os << "quadratic";
+            break;
+
+        case CURVE_TYPE::CUBIC:
+            os << "cubic";
+            break;
+    }
+
+    return os;
+}
 
 class ICurve
 {
     protected:
         virtual void InterpolatePoints() = 0;
 
-    public:
+    protected:
         virtual void AddPoint(std::array<float, 2> point) = 0;
-        virtual void UpdatePoint(int32_t index, std::array<float, 2> position) = 0;
         virtual void DeletePoint(int32_t index) = 0;
+
+    public:
+        virtual void UpdatePoint(int32_t index, std::array<float, 2> position) = 0;
         virtual void AddAnchor(std::array<float, 2> point) = 0;
-        virtual void RemoveAnchor(std::array<float, 2> point) = 0;
+        virtual void RemoveAnchor(int32_t index) = 0;
         virtual std::vector<std::array<float, 2>> Data() = 0;
         virtual void CloseLoop(bool close_loop) = 0;
 };
 
-class CurveData
+struct CurveData
 {
-    private:
-        CURVE_TYPE curveType = CURVE_TYPE::CUBIC;
+    std::vector<std::array<float, 2>>  pointList;
+    std::vector<std::array<float, 2>*> controlPointList;
 
-    public:
-        CurveData() = default;
-        explicit CurveData(CURVE_TYPE curve_type) : curveType (curve_type) {}
-        virtual ~CurveData() = default;
+    uint32_t id = 0;
+    bool isCloseLoop = false;
+    bool areHandlesGenerated = true;
+    float smoothFactor = 1.0f;
+    const CURVE_TYPE curveType = CURVE_TYPE::CUBIC;
 
-        std::vector<std::array<float, 2>>  pointList;
-        std::vector<std::array<float, 2>*> controlPointList;
-
-        uint32_t id = 0;
-        bool isCloseLoop = false;
-        bool hidePoints = false;
-        bool hideControlPoints = false;
-        float smoothFactor = 1.0f;
+    CurveData() = default;
+    explicit CurveData(CURVE_TYPE curve_type) : curveType (curve_type) {}
+    virtual ~CurveData() = default;
 };

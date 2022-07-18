@@ -259,7 +259,7 @@ int main(int argc, char*argv[])
                     hover_anim.push_back(0.0f);
                     line_draw_shape.push_back(add_new_point);
 
-                    cubic_curve.AddPoint({add_new_point.position.x, add_new_point.position.y});
+                    //cubic_curve.AddAnchor({add_new_point.position.x, add_new_point.position.y}); // generates 3 points at the same time. control for the CubicCurve class will need to change!
 
                     line_draw_shape[control_point].color = sf::Color::Black; // set last control point color back to white
                     control_point = static_cast<int32_t>(line_draw_shape.size())-1;

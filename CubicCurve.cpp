@@ -40,14 +40,55 @@ std::array<float, 2> CubicCurve::interpolate(const std::array<float, 2>  & a, co
     return {xpc, ypc};
 }
 
-void CubicCurve::InterpolatePoints()
+int32_t CubicCurve::GetClosestAnchorPoint(int32_t index)
+{
+    // check if selected point is an anchor point.
+
+    int sel_idx = ((index-1) % 3);
+    bool is_anchor = (sel_idx == 0);
+
+    // if not an anchor point then check to find the nearest anchor point. if the index value is 1 then the
+    // anchor point is 1 less than the current index value else the anchor point is 1 more than the current
+    // index
+    //
+    // example: (3 possible indexes)
+    // (3) -- (4) -- (5) => 3 vertices by index (4) is the center vertex on the curve
+    //      /    \
+        //   (...) (...)
+    //
+    // 1. (4 - 1) % 3 = 0 selected anchor point
+    // 2. (5 - 1) % 3 = 1 selected control point to the right of anchor point
+    // 3. (3 - 1) % 3 = 2 selected control point to the left of the anchor point
+
+    if (!is_anchor)
+    {
+        if (sel_idx == 1)
+        {
+            index -= 1;
+        }
+        else
+        {
+            index += 1;
+        }
+    }
+
+    return index;
+}
+
+bool CubicCurve::IsAnchorPoint(int32_t index)
+{
+    int32_t sel_idx = ((index-1) % 3);
+    return (sel_idx == 0);
+}
+
+void CubicCurve::interpolateWithCubicHint()
 {
     constexpr size_t min_points = 4;
+    curveList.clear();
+    handleList.clear();
+
     if (curveData && curveData->pointList.size() >= min_points)
     {
-        curveList.clear();
-        handleList.clear();
-
         constexpr float t_constrain_beg = 0.0f;
         constexpr float t_constrain_end = 1.0f;
 
@@ -56,11 +97,10 @@ void CubicCurve::InterpolatePoints()
         float step_size = 1.0f / curveData->smoothFactor; // the larger s is the smoother the line
         constexpr float epsilon = 0.0001f; // for step size values that may not exactly reach 1.0f
 
-        //size_t n_iterations = ((curveData->pointList.size() - 4)  / 3) + 1;
-        size_t n_iterations = (curveData->pointList.size() / 3) - 1;
-        n_iterations = std::clamp(n_iterations, size_t(0), std::numeric_limits<size_t>::max());
+        size_t n_segments = (curveData->pointList.size() / 3) - 1;
+        n_segments = std::clamp(n_segments, size_t(0), std::numeric_limits<size_t>::max());
 
-        for (size_t i=0; i<n_iterations; i++)
+        for (size_t i=0; i<n_segments; i++)
         {
             uint32_t point_a = (i * 3) + 1;
             uint32_t point_b = (i * 3) + 2;
@@ -79,7 +119,7 @@ void CubicCurve::InterpolatePoints()
 
             t = t_constrain_beg;
 
-            if (!curveData->hideControlPoints)
+            if (curveData->areHandlesGenerated)
             {
                 handleList.emplace_back(curveData->pointList[point_a]);
                 handleList.emplace_back(curveData->pointList[point_a-1]);
@@ -96,7 +136,8 @@ void CubicCurve::InterpolatePoints()
 
         }
 
-        if (curveData->isCloseLoop && (curveData->pointList.size() > 6))
+        constexpr size_t min_points_for_closed_curve = 6;
+        if (curveData->isCloseLoop && (curveData->pointList.size() > min_points_for_closed_curve))
         {
             std::array<float, 2> new_point {};
 
@@ -117,15 +158,40 @@ void CubicCurve::InterpolatePoints()
             }
         }
     }
+    else if ((curveData && curveData->pointList.size() >= (min_points-1)) && curveData->areHandlesGenerated)
+    {
+        // draw handles if there are at least 3 points
+        uint32_t point_a = 1;
+        uint32_t point_b = 2;
+        uint32_t point_c = 3;
+        uint32_t point_d = 4;
+
+        handleList.emplace_back(curveData->pointList[point_a]);
+        handleList.emplace_back(curveData->pointList[point_a-1]);
+
+        handleList.emplace_back(curveData->pointList[point_a]);
+        handleList.emplace_back(curveData->pointList[point_b]);
+
+        handleList.emplace_back(curveData->pointList[point_d]);
+        handleList.emplace_back(curveData->pointList[point_c]);
+
+        handleList.emplace_back(curveData->pointList[point_d]);
+        handleList.emplace_back(curveData->pointList[point_d+1]);
+    }
     else
     {
         std::cerr << "no curve data available or not enough data points!\n";
     }
 }
 
-CubicCurve::CubicCurve(CurveData *curve_data)
+void CubicCurve::interpolateWithQuadraticHint()
 {
-    curveData = curve_data;
+    std::cerr << "no implementation for curve type " << curveData->curveType << "\n";
+}
+
+void CubicCurve::interpolateWithLinearHint()
+{
+    std::cerr << "no implementation for curve type " << curveData->curveType << "\n";
 }
 
 void CubicCurve::AddPoint(std::array<float, 2> point)
@@ -134,31 +200,6 @@ void CubicCurve::AddPoint(std::array<float, 2> point)
     {
         curveData->pointList.push_back(point);
         InterpolatePoints();
-    }
-    else
-    {
-        std::cerr << "no curve data available!\n";
-    }
-}
-
-void CubicCurve::UpdatePoint(int32_t index, std::array<float, 2> position)
-{
-    if (curveData)
-    {
-        // if the point selected to be updated is an anchor point then update the control points to move along
-        // with the updated anchor point position
-
-        bool is_anchor = (((index-1) % 3) == 0);
-        if (is_anchor)
-        {
-            std::array<float, 2> diff = {(position[0] - curveData->pointList[index][0]), (position[1] - curveData->pointList[index][1])};
-            curveData->pointList[index-1] = {(curveData->pointList[index-1][0] + diff[0]), (curveData->pointList[index-1][1] + diff[1])};
-            curveData->pointList[index+1] = {(curveData->pointList[index+1][0] + diff[0]), (curveData->pointList[index+1][1] + diff[1])};
-        }
-
-        curveData->pointList[index] = position;
-
-        InterpolatePoints(); // update curve data
     }
     else
     {
@@ -178,36 +219,79 @@ void CubicCurve::DeletePoint(int32_t index)
     }
 }
 
+void CubicCurve::InterpolatePoints()
+{
+    if (curveData->curveType == CURVE_TYPE::CUBIC)
+    {
+        interpolateWithCubicHint();
+    }
+    else if (curveData->curveType == CURVE_TYPE::QUADRATIC)
+    {
+        interpolateWithQuadraticHint();
+    }
+    else // CURVE_TYPE::LINEAR
+    {
+        interpolateWithLinearHint();
+    }
+}
+
+CubicCurve::CubicCurve(CurveData *curve_data)
+{
+    curveData = curve_data;
+}
+
+void CubicCurve::UpdatePoint(int32_t index, std::array<float, 2> position)
+{
+    if (curveData && !curveData->pointList.empty())
+    {
+        // if the point selected to be updated is an anchor point then update the control points to move along
+        // with the updated anchor point position
+
+        if (IsAnchorPoint(index))
+        {
+            std::array<float, 2> diff = {(position[0] - curveData->pointList[index][0]), (position[1] - curveData->pointList[index][1])};
+            curveData->pointList[index-1] = {(curveData->pointList[index-1][0] + diff[0]), (curveData->pointList[index-1][1] + diff[1])};
+            curveData->pointList[index+1] = {(curveData->pointList[index+1][0] + diff[0]), (curveData->pointList[index+1][1] + diff[1])};
+        }
+
+        curveData->pointList[index] = position;
+
+        InterpolatePoints(); // update curve data
+    }
+    else
+    {
+        std::cerr << "no curve data available!\n";
+    }
+}
+
 void CubicCurve::AddAnchor(std::array<float, 2> point)
 {
-    constexpr float initial_control_distance = 50.0f;
-
     if (curveData->pointList.empty() || (curveData->pointList.size() < 4))
     {
         if (curveData->pointList.empty())
         {
-            std::array<float, 2> new_control_point0 = {point[0] - initial_control_distance, point[1]}; // put control point to the left of the anchor point
+            std::array<float, 2> new_control_point0 = {point[0] - initialControlDistance, point[1]}; // put control point to the left of the anchor point
             AddPoint(new_control_point0); // control point
 
             AddPoint(point); // point
 
-            std::array<float, 2> new_control_point = {point[0] + initial_control_distance, point[1]}; // put control point to the left of the anchor point
+            std::array<float, 2> new_control_point = {point[0] + initialControlDistance, point[1]}; // put control point to the left of the anchor point
             AddPoint(new_control_point); // control point
         }
         else
         {
-            std::array<float, 2> new_control_point0 = {point[0] - initial_control_distance, point[1]}; // put control point to the left of the anchor point
+            std::array<float, 2> new_control_point0 = {point[0] - initialControlDistance, point[1]}; // put control point to the left of the anchor point
             AddPoint(new_control_point0); // control point
 
             AddPoint(point); // point
 
-            std::array<float, 2> new_control_point1 = {point[0] + initial_control_distance, point[1]}; // put control point to the left of the anchor point
+            std::array<float, 2> new_control_point1 = {point[0] + initialControlDistance, point[1]}; // put control point to the left of the anchor point
             AddPoint(new_control_point1); // control point
         }
     }
     else
     {
-        // find the differences of the last anchor points and it's control points so it can be added to the new created segment points
+        // find the differences of the last anchor points, and it's control points, so it can be added to the new created segment points
         // get last control and anchor points
         std::array<float, 2> last_anchor_point = curveData->pointList[curveData->pointList.size()-2];
         std::array<float, 2> r_control_point = curveData->pointList[curveData->pointList.size()-1];
@@ -233,19 +317,25 @@ void CubicCurve::AddAnchor(std::array<float, 2> point)
     InterpolatePoints();
 }
 
-void CubicCurve::RemoveAnchor(std::array<float, 2> point)
-{/*
-    for (const auto p : pointList)
+void CubicCurve::RemoveAnchor(int32_t index)
+{
+    if (curveData && (curveData->pointList.empty() || (curveData->pointList.size() >= 3)))
     {
-        if (p == point)
+        index = GetClosestAnchorPoint(index);
+
+        // remove 3 points --> the 2 control points and anchor point
+        int32_t remove_index = (index-1);
+        for (size_t i=0; i<3; i++)
         {
-
+            DeletePoint(remove_index);
         }
-    }
 
-    //pointList.erase(pointList.begin());
-    InterpolatePoint();
-    */
+        InterpolatePoints();
+    }
+    else
+    {
+        std::cerr << "no curve data available or unable to delete because selected point is not an anchor point!\n";
+    }
 }
 
 void CubicCurve::CloseLoop(bool close_loop)
