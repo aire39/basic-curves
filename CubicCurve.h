@@ -34,7 +34,7 @@ class CubicCurve : public ICurve
         explicit CubicCurve(CurveData *curve_data);
 
         void UpdatePoint(int32_t index, std::array<float, 2> position, CURVE_CONTROL curve_control) override; // update selected point around. If anchor is selected then control points are also updated
-        void AddAnchor(std::array<float, 2> point) override; // add new point with control points of previous anchor (if exist)
+        void AddAnchor(std::array<float, 2> point, PLACE_ANCHOR place_anchor) override; // add new point with control points of previous anchor (if exist)
         void InsertAnchor(std::array<float, 2> point, int32_t index) override;
         void RemoveAnchor(int32_t index) override; // remove anchor and control points from curve
         void CloseLoop(bool close_loop) override; // close the curve - create a line from the last point to the first

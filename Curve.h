@@ -28,6 +28,7 @@ inline std::ostream& operator<<(std::ostream& os, const CURVE_TYPE & curve_type)
 }
 
 enum class CURVE_CONTROL : uint16_t {FREE, ALIGNMENT};
+enum class PLACE_ANCHOR : uint16_t {BEG, END};
 
 class ICurve
 {
@@ -41,7 +42,7 @@ class ICurve
 
     public:
         virtual void UpdatePoint(int32_t index, std::array<float, 2> position, CURVE_CONTROL curve_control) = 0;
-        virtual void AddAnchor(std::array<float, 2> point) = 0;
+        virtual void AddAnchor(std::array<float, 2> point, PLACE_ANCHOR place_anchor) = 0;
         virtual void InsertAnchor(std::array<float, 2> point, int32_t index) = 0;
         virtual void RemoveAnchor(int32_t index) = 0;
         virtual std::vector<std::array<float, 2>> Data() = 0;

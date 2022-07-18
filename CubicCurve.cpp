@@ -296,7 +296,7 @@ void CubicCurve::UpdatePoint(int32_t index, std::array<float, 2> position, CURVE
     }
 }
 
-void CubicCurve::AddAnchor(std::array<float, 2> point)
+void CubicCurve::AddAnchor(std::array<float, 2> point, PLACE_ANCHOR place_anchor)
 {
     if (curveData->pointList.empty() || (curveData->pointList.size() < 4))
     {
@@ -323,27 +323,59 @@ void CubicCurve::AddAnchor(std::array<float, 2> point)
     }
     else
     {
-        // find the differences of the last anchor points, and it's control points, so it can be added to the new created segment points
-        // get last control and anchor points
-        std::array<float, 2> last_anchor_point = curveData->pointList[curveData->pointList.size()-2];
-        std::array<float, 2> r_control_point = curveData->pointList[curveData->pointList.size()-1];
-        std::array<float, 2> l_control_point = curveData->pointList[curveData->pointList.size()-3];
+        if (place_anchor == PLACE_ANCHOR::END) // add new points to end of the curve
+        {
+            // find the differences of the last anchor points, and it's control points, so it can be added to the new created segment points
+            // get last control and anchor points
+            std::array<float, 2> last_anchor_point = curveData->pointList[curveData->pointList.size()-2];
+            std::array<float, 2> r_control_point = curveData->pointList[curveData->pointList.size()-1];
+            std::array<float, 2> l_control_point = curveData->pointList[curveData->pointList.size()-3];
 
-        // get the individual differences from each of the control points to the anchor point
-        std::array<float, 2> last_anchor_offset0 = {(l_control_point[0] - last_anchor_point[0]), (l_control_point[1] - last_anchor_point[1])};
-        std::array<float, 2> last_anchor_offset1 = {(r_control_point[0] - last_anchor_point[0]), (r_control_point[1] - last_anchor_point[1])};
+            // get the individual differences from each of the control points to the anchor point
+            std::array<float, 2> last_anchor_offset0 = {(l_control_point[0] - last_anchor_point[0]), (l_control_point[1] - last_anchor_point[1])};
+            std::array<float, 2> last_anchor_offset1 = {(r_control_point[0] - last_anchor_point[0]), (r_control_point[1] - last_anchor_point[1])};
 
-        // add new segment by adding 3 new points to the list
-        // add new control point (left control point)
-        std::array<float, 2> new_control_point_0 = {(point[0] + last_anchor_offset0[0]), (point[1] + last_anchor_offset0[1])};
-        AddPoint(new_control_point_0); // control point
+            // add new segment by adding 3 new points to the list
+            // add new control point (left control point)
+            std::array<float, 2> new_control_point_0 = {(point[0] + last_anchor_offset0[0]), (point[1] + last_anchor_offset0[1])};
+            AddPoint(new_control_point_0); // control point
 
-        // add new anchor point
-        AddPoint(point); // new anchor point
+            // add new anchor point
+            AddPoint(point); // new anchor point
 
-        // add new control point (right control point)
-        std::array<float, 2> new_control_point_1 = {(point[0] + last_anchor_offset1[0]), (point[1] + last_anchor_offset1[1])};
-        AddPoint(new_control_point_1); // control point
+            // add new control point (right control point)
+            std::array<float, 2> new_control_point_1 = {(point[0] + last_anchor_offset1[0]), (point[1] + last_anchor_offset1[1])};
+            AddPoint(new_control_point_1); // control point
+        }
+        else // add new points to beginning of the curve PLACE_ANCHOR::BEG
+        {
+            // find the differences of the last anchor points, and it's control points, so it can be added to the new created segment points
+            // get last control and anchor points
+            const int32_t index = 0;
+            int32_t anchor_point_index = GetClosestAnchorPoint(index);
+
+            std::array<float, 2> last_anchor_point = curveData->pointList[anchor_point_index];
+            std::array<float, 2> r_control_point = curveData->pointList[anchor_point_index+1];
+            std::array<float, 2> l_control_point = curveData->pointList[anchor_point_index-1];
+
+            // get the individual differences from each of the control points to the anchor point
+            std::array<float, 2> last_anchor_offset0 = {(l_control_point[0] - last_anchor_point[0]), (l_control_point[1] - last_anchor_point[1])};
+            std::array<float, 2> last_anchor_offset1 = {(r_control_point[0] - last_anchor_point[0]), (r_control_point[1] - last_anchor_point[1])};
+
+            // add new segment by adding 3 new points to the list
+            // add new control point (right control point)
+            std::array<float, 2> new_control_point_1 = {(point[0] + last_anchor_offset1[0]), (point[1] + last_anchor_offset1[1])};
+            InsertPoint(new_control_point_1, index); // control point
+
+            // add new anchor point
+            InsertPoint(point, index); // anchor point
+
+            // add new control point (left control point)
+            std::array<float, 2> new_control_point_0 = {(point[0] + last_anchor_offset0[0]), (point[1] + last_anchor_offset0[1])};
+            InsertPoint(new_control_point_0, index); // control point
+
+            InterpolatePoints();
+        }
     }
 
     InterpolatePoints();
@@ -378,6 +410,10 @@ void CubicCurve::InsertAnchor(std::array<float, 2> point, int32_t index)
         InsertPoint(new_control_point_0, (index+1)); // control point
 
         InterpolatePoints();
+    }
+    else
+    {
+        std::cerr << "no intersection found! Unable to insert a new point!\n";
     }
 }
 
