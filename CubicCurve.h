@@ -24,6 +24,7 @@ class CubicCurve : public ICurve
 
     protected:
         void AddPoint(std::array<float, 2> point) override; // // add points
+        void InsertPoint(std::array<float, 2> point, int32_t index) override; // insert points
         void DeletePoint(int32_t index) override; // delete points
         void InterpolatePoints() override; // generate curve from CurveData point list
 
@@ -31,10 +32,12 @@ class CubicCurve : public ICurve
         CubicCurve() = default;
         explicit CubicCurve(CurveData *curve_data);
 
-        void UpdatePoint(int32_t index, std::array<float, 2> position) override; // update selected point around. If anchor is selected then control points are also updated
+        void UpdatePoint(int32_t index, std::array<float, 2> position, CURVE_CONTROL curve_control) override; // update selected point around. If anchor is selected then control points are also updated
         void AddAnchor(std::array<float, 2> point) override; // add new point with control points of previous anchor (if exist)
+        void InsertAnchor(std::array<float, 2> point, int32_t index) override;
         void RemoveAnchor(int32_t index) override; // remove anchor and control points from curve
         void CloseLoop(bool close_loop) override; // close the curve - create a line from the last point to the first
+        std::pair<std::array<float, 2>, uint32_t> IntersectionOnCurve(std::array<float, 2> position) override; // get intersecting position of point on the curve and also the insertion index to insert a new point
 
         std::vector<std::array<float, 2>> Data() override; // return generated curve data points
         std::vector<std::array<float, 2>> HandleData(); // return generated curve handle data points

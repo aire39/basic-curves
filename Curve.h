@@ -27,6 +27,8 @@ inline std::ostream& operator<<(std::ostream& os, const CURVE_TYPE & curve_type)
     return os;
 }
 
+enum class CURVE_CONTROL : uint16_t {FREE, ALIGNMENT};
+
 class ICurve
 {
     protected:
@@ -34,14 +36,17 @@ class ICurve
 
     protected:
         virtual void AddPoint(std::array<float, 2> point) = 0;
+        virtual void InsertPoint(std::array<float, 2> point, int32_t index) = 0;
         virtual void DeletePoint(int32_t index) = 0;
 
     public:
-        virtual void UpdatePoint(int32_t index, std::array<float, 2> position) = 0;
+        virtual void UpdatePoint(int32_t index, std::array<float, 2> position, CURVE_CONTROL curve_control) = 0;
         virtual void AddAnchor(std::array<float, 2> point) = 0;
+        virtual void InsertAnchor(std::array<float, 2> point, int32_t index) = 0;
         virtual void RemoveAnchor(int32_t index) = 0;
         virtual std::vector<std::array<float, 2>> Data() = 0;
         virtual void CloseLoop(bool close_loop) = 0;
+        virtual std::pair<std::array<float, 2>, uint32_t> IntersectionOnCurve(std::array<float, 2> position) = 0;
 };
 
 struct CurveData

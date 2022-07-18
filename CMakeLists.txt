@@ -25,7 +25,7 @@ add_executable(basic_bezier_curves
                main.cpp
                Curve.h
                CubicCurve.cpp
-               CubicCurve.h)
+               CubicCurve.h CurveEffect.cpp CurveEffect.h)
 
 target_link_libraries(basic_bezier_curves
                       sfml-window
