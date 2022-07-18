@@ -1,11 +1,6 @@
-//
-// Created by sean on 7/13/2022.
-//
-
 #include "CubicCurve.h"
-#include <limits>
 #include <algorithm>
-#include <vector>
+#include <limits>
 #include <cmath>
 
 #include <iostream>

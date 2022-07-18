@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Curve.h"
+#include <vector>
 #include <array>
 #include <memory>
 
