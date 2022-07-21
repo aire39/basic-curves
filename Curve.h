@@ -48,11 +48,13 @@ class ICurve
         virtual std::vector<std::array<float, 2>> Data() = 0;
         virtual void CloseLoop(bool close_loop) = 0;
         virtual std::pair<std::array<float, 2>, uint32_t> IntersectionOnCurve(std::array<float, 2> position) = 0;
+        virtual const std::vector<std::array<float, 2>> & GetPointData() = 0;
+        virtual const std::vector<std::array<float, 2>> & HandleData() = 0;
 };
 
 struct CurveData
 {
-    std::vector<std::array<float, 2>>  pointList;
+    std::vector<std::array<float, 2>>  pointList; // anchor points (mis point between 2 segments that is not a control point unless the intended curve is linear)
     std::vector<std::array<float, 2>*> controlPointList;
 
     uint32_t id = 0;

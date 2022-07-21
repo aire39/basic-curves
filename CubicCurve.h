@@ -11,12 +11,13 @@ class CubicCurve : public ICurve
         static std::array<float, 2> interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const std::array<float, 2> & c, const std::array<float, 2> & d, const float & parametric_t);
 
         CurveData * curveData = nullptr; // curve data block used by this class to generate the curve data
+
         std::vector<std::array<float, 2>> curveList; // data that holds the generated curve from CurveData
         std::vector<std::array<float, 2>> handleList; // data that holds the generated curve handles from CurveData
 
         static constexpr float initialControlDistance = 50.0f; // initial distance from the 1st anchor point created
 
-        static int32_t GetClosestAnchorPoint(int32_t index);
+        static int32_t GetClosestAnchorPoint(const int32_t & index);
         static bool IsAnchorPoint(int32_t index);
 
         void interpolateWithCubicHint(); // generate a cubic curve
@@ -41,7 +42,8 @@ class CubicCurve : public ICurve
         std::pair<std::array<float, 2>, uint32_t> IntersectionOnCurve(std::array<float, 2> position) override; // get intersecting position of point on the curve and also the insertion index to insert a new point
 
         std::vector<std::array<float, 2>> Data() override; // return generated curve data points
-        std::vector<std::array<float, 2>> HandleData(); // return generated curve handle data points
+        const std::vector<std::array<float, 2>> & HandleData() override; // return generated curve handle data points
+        const std::vector<std::array<float, 2>> & GetPointData() override;
 
         CubicCurve & operator= (const std::unique_ptr<CurveData> & rhs)
         {

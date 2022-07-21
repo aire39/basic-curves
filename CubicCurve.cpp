@@ -35,12 +35,13 @@ std::array<float, 2> CubicCurve::interpolate(const std::array<float, 2>  & a, co
     return {xpc, ypc};
 }
 
-int32_t CubicCurve::GetClosestAnchorPoint(int32_t index)
+int32_t CubicCurve::GetClosestAnchorPoint(const int32_t & index)
 {
     // check if selected point is an anchor point.
 
-    int sel_idx = ((index-1) % 3);
-    bool is_anchor = (sel_idx == 0);
+    int32_t anchor_index = index;
+    int32_t sel_idx = ((index-1) % 3); // check if point is the left (control point), middle (anchor point), or right (control point)
+    bool is_anchor = (sel_idx == 0); // if value is 0 then the index is the anchor point and if not then we need to figure out where it is...
 
     // if not an anchor point then check to find the nearest anchor point. if the index value is 1 then the
     // anchor point is 1 less than the current index value else the anchor point is 1 more than the current
@@ -59,15 +60,15 @@ int32_t CubicCurve::GetClosestAnchorPoint(int32_t index)
     {
         if (sel_idx == 1)
         {
-            index -= 1;
+            anchor_index = (index - 1);
         }
         else
         {
-            index += 1;
+            anchor_index = (index + 1);
         }
     }
 
-    return index;
+    return anchor_index;
 }
 
 bool CubicCurve::IsAnchorPoint(int32_t index)
@@ -158,20 +159,12 @@ void CubicCurve::interpolateWithCubicHint()
         // draw handles if there are at least 3 points
         uint32_t point_a = 1;
         uint32_t point_b = 2;
-        uint32_t point_c = 3;
-        uint32_t point_d = 4;
 
-        handleList.emplace_back(curveData->pointList[point_a]);
-        handleList.emplace_back(curveData->pointList[point_a-1]);
+        handleList.push_back(curveData->pointList[point_a]);
+        handleList.push_back(curveData->pointList[point_a-1]);
 
-        handleList.emplace_back(curveData->pointList[point_a]);
-        handleList.emplace_back(curveData->pointList[point_b]);
-
-        handleList.emplace_back(curveData->pointList[point_d]);
-        handleList.emplace_back(curveData->pointList[point_c]);
-
-        handleList.emplace_back(curveData->pointList[point_d]);
-        handleList.emplace_back(curveData->pointList[point_d+1]);
+        handleList.push_back(curveData->pointList[point_a]);
+        handleList.push_back(curveData->pointList[point_b]);
     }
     else
     {
@@ -373,8 +366,6 @@ void CubicCurve::AddAnchor(std::array<float, 2> point, PLACE_ANCHOR place_anchor
             // add new control point (left control point)
             std::array<float, 2> new_control_point_0 = {(point[0] + last_anchor_offset0[0]), (point[1] + last_anchor_offset0[1])};
             InsertPoint(new_control_point_0, index); // control point
-
-            InterpolatePoints();
         }
     }
 
@@ -452,17 +443,22 @@ std::vector<std::array<float, 2>> CubicCurve::Data()
     return curveList;
 }
 
-std::vector<std::array<float, 2>> CubicCurve::HandleData()
+const std::vector<std::array<float, 2>> & CubicCurve::HandleData()
 {
     return handleList;
 }
 
+const std::vector<std::array<float, 2>> & CubicCurve::GetPointData()
+{
+    return curveData->pointList;
+}
+
 std::pair<std::array<float, 2>, uint32_t> CubicCurve::IntersectionOnCurve(std::array<float, 2> position)
 {
-    std::array<float,2> position_on_curve = {-400.0f, -400.0f};
+    std::array<float,2> position_on_curve = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min()};
     uint32_t index_insert_index = -1;
 
-    if (curveData && (curveData->pointList.size() > 3))
+    if (curveData && (curveData->pointList.size() > 5))
     {
         constexpr float t_constrain_beg = 0.0f;
         constexpr float t_constrain_end = 1.0f;
@@ -495,7 +491,8 @@ std::pair<std::array<float, 2>, uint32_t> CubicCurve::IntersectionOnCurve(std::a
                 std::array<float, 2> check_distance = {std::abs(new_point[0] - position[0]), std::abs(new_point[1] - position[1])};
                 float dst = std::sqrt((check_distance[0]*check_distance[0]) + (check_distance[1]*check_distance[1]));
 
-                if (dst <= 10.0f)
+                constexpr float default_radius = 10.0f;
+                if (dst <= default_radius)
                 {
                     position_on_curve = new_point;
                     found_intersection = true;
