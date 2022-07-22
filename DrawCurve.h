@@ -7,7 +7,7 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 
-class DrawCubicCurve
+class DrawCurve
 {
     private:
         sf::Color hoverColor = sf::Color(30, 156, 239, 255); // sky blue
@@ -27,13 +27,13 @@ class DrawCubicCurve
         int32_t hoverPoint = -1;
 
     public:
-        DrawCubicCurve() = default;
-        ~DrawCubicCurve() = default;
+        DrawCurve() = default;
+        ~DrawCurve() = default;
 
         void HoverAnimation(ICurve* curve, int32_t x, int32_t y);
         void SelectedPoint(int32_t index);
 
         void DrawIntersectionPoint(ICurve* curve, int32_t x, int32_t y, sf::RenderWindow & window);
-        void DrawPoints(ICurve* curve, bool draw_handles, sf::RenderWindow & window);
-        void DrawCurve(ICurve* curve,  sf::RenderWindow & window, const sf::PrimitiveType & primitive_type = sf::PrimitiveType::LineStrip);
+        void RenderCurve(ICurve* curve, sf::RenderWindow & window, const sf::PrimitiveType & primitive_type = sf::PrimitiveType::LineStrip);
+    void DrawPoints(ICurve* curve, bool draw_handles, sf::RenderWindow & window);
 };

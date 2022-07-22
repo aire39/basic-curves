@@ -5,10 +5,10 @@
 #include <array>
 #include <memory>
 
-class CubicCurve : public ICurve
+class LinearCurve : public ICurve
 {
     private:
-        static std::array<float, 2> interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const std::array<float, 2> & c, const std::array<float, 2> & d, const float & parametric_t);
+        static std::array<float, 2> interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const float & parametric_t);
 
         CurveData * curveData = nullptr; // curve data block used by this class to generate the curve data
 
@@ -20,9 +20,9 @@ class CubicCurve : public ICurve
         static int32_t GetClosestAnchorPoint(const int32_t & index);
         static bool IsAnchorPoint(int32_t index);
 
-        void interpolateWithCubicHint(); // generate a cubic curve
-        void interpolateWithQuadraticHint(); // generate cubic curve from quadratic
         void interpolateWithLinearHint(); // generate cubic cubic curve from linear
+        void interpolateWithQuadraticHint(); // generate cubic curve from quadratic
+        void interpolateWithCubicHint(); // generate a cubic curve
 
     protected:
         void AddPoint(std::array<float, 2> point) override; // // add points
@@ -31,8 +31,8 @@ class CubicCurve : public ICurve
         void InterpolatePoints() override; // generate curve from CurveData point list
 
     public:
-        CubicCurve() = default;
-        explicit CubicCurve(CurveData *curve_data);
+        LinearCurve() = default;
+        explicit LinearCurve(CurveData *curve_data);
 
         void UpdatePoint(int32_t index, std::array<float, 2> position, CURVE_CONTROL curve_control) override; // update selected point around. If anchor is selected then control points are also updated
         void AddAnchor(std::array<float, 2> point, PLACE_ANCHOR place_anchor) override; // add new point with control points of previous anchor (if exist)
@@ -47,13 +47,13 @@ class CubicCurve : public ICurve
 
         CURVE_TYPE CurveType() override;
 
-        CubicCurve & operator= (const std::unique_ptr<CurveData> & rhs)
+        LinearCurve & operator= (const std::unique_ptr<CurveData> & rhs)
         {
             this->curveData = rhs.get();
             return *this;
         }
 
-        CubicCurve & operator= (std::unique_ptr<CurveData>&& rhs)
+        LinearCurve & operator= (std::unique_ptr<CurveData>&& rhs)
         {
             this->curveData = rhs.get();
             return *this;

@@ -1,9 +1,9 @@
-#include "DrawCubicCurve.h"
+#include "DrawCurve.h"
 
 #include <cmath>
 #include <algorithm>
 
-void DrawCubicCurve::HoverAnimation(ICurve* curve, int32_t x, int32_t y)
+void DrawCurve::HoverAnimation(ICurve* curve, int32_t x, int32_t y)
 {
     if (!pointRadiusValues.empty())
     {
@@ -34,17 +34,38 @@ void DrawCubicCurve::HoverAnimation(ICurve* curve, int32_t x, int32_t y)
     }
 }
 
-void DrawCubicCurve::DrawIntersectionPoint(ICurve* curve, int32_t x, int32_t y, sf::RenderWindow & window)
+void DrawCurve::DrawIntersectionPoint(ICurve* curve, int32_t x, int32_t y, sf::RenderWindow & window)
 {
     if (curve)
     {
         auto intersect_on_curve = curve->IntersectionOnCurve({(float)x, (float)y});
         auto insert_index = static_cast<int32_t>(intersect_on_curve.second);
 
-        if (insert_index > 1)
+        if (insert_index >= 1)
         {
-            int32_t anchor_index = insert_index - ((insert_index-1) % 3);
-            int32_t next_anchor_index = anchor_index + 3;
+            int32_t anchor_index;
+            int32_t next_anchor_index;
+
+            if (curve->CurveType() == CURVE_TYPE::CUBIC)
+            {
+                if (insert_index <= 1)
+                {
+                    return;
+                }
+
+                anchor_index = insert_index - ((insert_index - 1) % 3);
+                next_anchor_index = anchor_index + 3;
+            }
+            else if (curve->CurveType() == CURVE_TYPE::LINEAR)
+            {
+                anchor_index = (insert_index - 1);
+                next_anchor_index = anchor_index + 1;
+            }
+            else // QUADRATIC
+            {
+                std::cerr << "Not implemented yet!\n";
+                return;
+            }
 
             std::array<float,2> anchor_position = curve->GetPointData()[anchor_index];
             std::array<float,2> anchor_next_position = curve->GetPointData()[next_anchor_index];
@@ -73,12 +94,12 @@ void DrawCubicCurve::DrawIntersectionPoint(ICurve* curve, int32_t x, int32_t y, 
     }
 }
 
-void DrawCubicCurve::SelectedPoint(int32_t index)
+void DrawCurve::SelectedPoint(int32_t index)
 {
     selectedPoint = index;
 }
 
-void DrawCubicCurve::DrawPoints(ICurve* curve, bool draw_handles, sf::RenderWindow & window)
+void DrawCurve::DrawPoints(ICurve* curve, bool draw_handles, sf::RenderWindow & window)
 {
     if (curve)
     {
@@ -142,7 +163,7 @@ void DrawCubicCurve::DrawPoints(ICurve* curve, bool draw_handles, sf::RenderWind
     }
 }
 
-void DrawCubicCurve::DrawCurve(ICurve* curve, sf::RenderWindow & window, const sf::PrimitiveType & primitive_type)
+void DrawCurve::RenderCurve(ICurve* curve, sf::RenderWindow & window, const sf::PrimitiveType & primitive_type)
 {
     const std::vector<std::array<float,2>> & curve_data = curve->Data();
     const size_t n_curve_points = curve_data.size();

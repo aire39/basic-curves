@@ -27,6 +27,22 @@ inline std::ostream& operator<<(std::ostream& os, const CURVE_TYPE & curve_type)
     return os;
 }
 
+struct CurveData
+{
+    std::vector<std::array<float, 2>>  pointList; // anchor points (mis point between 2 segments that is not a control point unless the intended curve is linear)
+    std::vector<std::array<float, 2>*> controlPointList;
+
+    uint32_t id = 0;
+    bool isCloseLoop = false;
+    bool areHandlesGenerated = true;
+    float smoothFactor = 1.0f;
+    const CURVE_TYPE curveType = CURVE_TYPE::CUBIC;
+
+    CurveData() = default;
+    explicit CurveData(CURVE_TYPE curve_type) : curveType (curve_type) {}
+    virtual ~CurveData() = default;
+};
+
 enum class CURVE_CONTROL : uint16_t {FREE, ALIGNMENT};
 enum class PLACE_ANCHOR : uint16_t {BEG, END};
 
@@ -50,20 +66,5 @@ class ICurve
         virtual std::pair<std::array<float, 2>, uint32_t> IntersectionOnCurve(std::array<float, 2> position) = 0;
         virtual const std::vector<std::array<float, 2>> & GetPointData() = 0;
         virtual const std::vector<std::array<float, 2>> & HandleData() = 0;
-};
-
-struct CurveData
-{
-    std::vector<std::array<float, 2>>  pointList; // anchor points (mis point between 2 segments that is not a control point unless the intended curve is linear)
-    std::vector<std::array<float, 2>*> controlPointList;
-
-    uint32_t id = 0;
-    bool isCloseLoop = false;
-    bool areHandlesGenerated = true;
-    float smoothFactor = 1.0f;
-    const CURVE_TYPE curveType = CURVE_TYPE::CUBIC;
-
-    CurveData() = default;
-    explicit CurveData(CURVE_TYPE curve_type) : curveType (curve_type) {}
-    virtual ~CurveData() = default;
+        virtual CURVE_TYPE CurveType() = 0;
 };

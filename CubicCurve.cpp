@@ -50,7 +50,7 @@ int32_t CubicCurve::GetClosestAnchorPoint(const int32_t & index)
     // example: (3 possible indexes)
     // (3) -- (4) -- (5) => 3 vertices by index (4) is the center vertex on the curve
     //      /    \
-        //   (...) (...)
+    //   (...) (...)
     //
     // 1. (4 - 1) % 3 = 0 selected anchor point
     // 2. (5 - 1) % 3 = 1 selected control point to the right of anchor point
@@ -438,21 +438,6 @@ void CubicCurve::CloseLoop(bool close_loop)
     }
 }
 
-std::vector<std::array<float, 2>> CubicCurve::Data()
-{
-    return curveList;
-}
-
-const std::vector<std::array<float, 2>> & CubicCurve::HandleData()
-{
-    return handleList;
-}
-
-const std::vector<std::array<float, 2>> & CubicCurve::GetPointData()
-{
-    return curveData->pointList;
-}
-
 std::pair<std::array<float, 2>, uint32_t> CubicCurve::IntersectionOnCurve(std::array<float, 2> position)
 {
     std::array<float,2> position_on_curve = {std::numeric_limits<float>::min(), std::numeric_limits<float>::min()};
@@ -513,6 +498,33 @@ std::pair<std::array<float, 2>, uint32_t> CubicCurve::IntersectionOnCurve(std::a
     }
 
     return {position_on_curve, index_insert_index};
+}
+
+std::vector<std::array<float, 2>> CubicCurve::Data()
+{
+    return curveList;
+}
+
+const std::vector<std::array<float, 2>> & CubicCurve::HandleData()
+{
+    return handleList;
+}
+
+const std::vector<std::array<float, 2>> & CubicCurve::GetPointData()
+{
+    return curveData->pointList;
+}
+
+CURVE_TYPE CubicCurve::CurveType()
+{
+    CURVE_TYPE curve_type = CURVE_TYPE::CUBIC;
+
+    if (curveData)
+    {
+        curve_type = curveData->curveType;
+    }
+
+    return curve_type;
 }
 
 std::unique_ptr<CurveData> CubicCurve::NewCurveData()
