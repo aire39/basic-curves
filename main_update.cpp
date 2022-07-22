@@ -13,6 +13,7 @@
 
 #include "Curve.h"
 #include "CubicCurve.h"
+#include "LinearCurve.h"
 #include "DrawCurve.h"
 #include "CurveEffect.h"
 
@@ -129,8 +130,16 @@ int main(int argc, char*argv[])
     //
 
     auto curve_data = CubicCurve::NewCurveData();
+    auto curve_data_linear = LinearCurve::NewCurveData();
+
     CubicCurve cubic_curve (curve_data.get());
+    LinearCurve linear_curve (curve_data_linear.get());
+
     DrawCurve draw_cubic_curve;
+    DrawCurve d_linear_curve;
+
+    //ICurve * active_curve = &cubic_curve;
+    ICurve * active_curve = &linear_curve;
 
     while (window.isOpen())
     {
@@ -188,9 +197,9 @@ int main(int argc, char*argv[])
                         }
                     }
 
-                    if(!cubic_curve.Data().empty())
+                    if(!active_curve->Data().empty())
                     {
-                        cubic_curve.RemoveAnchor(control_point);
+                        active_curve->RemoveAnchor(control_point);
                     }
                 }
 
@@ -229,7 +238,7 @@ int main(int argc, char*argv[])
                 if (event.key.code == sf::Keyboard::C)
                 {
                     is_close_loop ^= true;
-                    cubic_curve.CloseLoop(is_close_loop);
+                    active_curve->CloseLoop(is_close_loop);
                 }
 
                 if (event.key.code == sf::Keyboard::Add)
@@ -270,12 +279,15 @@ int main(int argc, char*argv[])
 
                 // do a simple linear search to see which point has been selected and set the control point if found
                 //for (size_t i=0; i<line_draw_shape.size(); i++)
-                for (size_t i=0; i<curve_data->pointList.size(); i++)
+                //for (size_t i=0; i<curve_data->pointList.size(); i++)
+                for (size_t i=0; i<active_curve->GetPointData().size(); i++)
                 {
                     //float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - line_draw_shape[i].position.x);
                     //float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - line_draw_shape[i].position.y);
-                    float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - curve_data->pointList[i][0]);
-                    float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - curve_data->pointList[i][1]);
+                    //float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - curve_data->pointList[i][0]);
+                    //float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - curve_data->pointList[i][1]);
+                    float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - active_curve->GetPointData()[i][0]);
+                    float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - active_curve->GetPointData()[i][1]);
 
                     if ((mouse_object_position_x_relative < circle_draw_shape.getRadius()) && (mouse_object_position_y_relative < circle_draw_shape.getRadius()))
                     {
@@ -283,7 +295,8 @@ int main(int argc, char*argv[])
                         l_mouse_y = mouse_y;
 
                         //last_selected_position = line_draw_shape[i].position;
-                        last_selected_position = sf::Vector2f(curve_data->pointList[i][0], curve_data->pointList[i][1]);
+                        //last_selected_position = sf::Vector2f(curve_data->pointList[i][0], curve_data->pointList[i][1]);
+                        last_selected_position = sf::Vector2f(active_curve->GetPointData()[i][0], active_curve->GetPointData()[i][1]);
 
                         //line_draw_shape[control_point].color = sf::Color::Black; // set last control point color back to white
                         control_point = static_cast<int32_t>(i);
@@ -301,13 +314,13 @@ int main(int argc, char*argv[])
                 if (control_key_down && alt_key_down && !found_vertex)
                 {
                     // add point to beginning of the curve
-                    cubic_curve.AddAnchor({static_cast<float>(mouse_x), static_cast<float>(mouse_y)}, PLACE_ANCHOR::BEG);
+                    active_curve->AddAnchor({static_cast<float>(mouse_x), static_cast<float>(mouse_y)}, PLACE_ANCHOR::BEG);
                 }
                 else if (control_key_down && shift_key_down && !found_vertex)
                 {
                     // add point to an intersecting point on the curve
-                    std::pair<std::array<float, 2>, int32_t> position_index = cubic_curve.IntersectionOnCurve({static_cast<float>(mouse_x), static_cast<float>(mouse_y)});
-                    cubic_curve.InsertAnchor(position_index.first, position_index.second);
+                    std::pair<std::array<float, 2>, int32_t> position_index = active_curve->IntersectionOnCurve({static_cast<float>(mouse_x), static_cast<float>(mouse_y)});
+                    active_curve->InsertAnchor(position_index.first, position_index.second);
                 }
                 else if (control_key_down && !found_vertex)
                 {
@@ -316,8 +329,8 @@ int main(int argc, char*argv[])
                     //hover_anim.push_back(0.0f);
                     //line_draw_shape.push_back(add_new_point);
 
-                    //cubic_curve.AddPoint({add_new_point.position.x, add_new_point.position.y});
-                    cubic_curve.AddAnchor({add_new_point.position.x, add_new_point.position.y}, PLACE_ANCHOR::END);
+                    //active_curve->AddPoint({add_new_point.position.x, add_new_point.position.y});
+                    active_curve->AddAnchor({add_new_point.position.x, add_new_point.position.y}, PLACE_ANCHOR::END);
 
                     //line_draw_shape[control_point].color = sf::Color::Black; // set last control point color back to white
                     //control_point = static_cast<int32_t>(line_draw_shape.size())-1;
@@ -343,11 +356,11 @@ int main(int argc, char*argv[])
 
                     if (shift_key_down)
                     {
-                        cubic_curve.UpdatePoint(control_point, {new_position_x, new_position_y}, CURVE_CONTROL::FREE);
+                        active_curve->UpdatePoint(control_point, {new_position_x, new_position_y}, CURVE_CONTROL::FREE);
                     }
                     else
                     {
-                        cubic_curve.UpdatePoint(control_point, {new_position_x, new_position_y}, CURVE_CONTROL::ALIGNMENT);
+                        active_curve->UpdatePoint(control_point, {new_position_x, new_position_y}, CURVE_CONTROL::ALIGNMENT);
                     }
                 }
             }
@@ -410,11 +423,24 @@ int main(int argc, char*argv[])
         }
         else //if (curve_type == CURVE_TYPE::LINEAR)
         {
+#if USE_OLD_CURVES
             if(!draw_linear_curve(line_draw_shape, static_cast<float>(curve_samples), window, primitive_type, fill_buffer, hide_points))
             {
                 txt_line_mode_message_render.setString("Need a minimal of 2 points to draw a linear 'bezier' curve!");
                 txt_line_mode_message_render.setPosition((WINDOW_WIDTH - (txt_line_mode_message_render.getLocalBounds().width + 2)) / 2, WINDOW_HEIGHT-30);
             }
+#else
+            d_linear_curve.HoverAnimation(&linear_curve, sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
+            d_linear_curve.SelectedPoint(control_point);
+            d_linear_curve.RenderCurve(&linear_curve, window, primitive_type);
+
+            if (control_key_down && shift_key_down)
+            {
+                d_linear_curve.DrawIntersectionPoint(&linear_curve, sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y, window);
+            }
+
+            d_linear_curve.DrawPoints(&linear_curve, !hide_points, window);
+#endif
         }
 
         if (show_text)
