@@ -13,6 +13,7 @@
 
 #include "Curve.h"
 #include "CubicCurve.h"
+#include "QuadraticCurve.h"
 #include "LinearCurve.h"
 #include "DrawCurve.h"
 #include "CurveEffect.h"
@@ -119,6 +120,8 @@ int main(int argc, char*argv[])
     int32_t control_point = -1;
     int32_t curve_samples = 50;
 
+    //CURVE_TYPE curve_type = CURVE_TYPE::QUADRATIC;
+    //CURVE_TYPE curve_type = CURVE_TYPE::CUBIC;
     CURVE_TYPE curve_type = CURVE_TYPE::LINEAR;
     bool show_fill = false;
     bool is_close_loop = false;
@@ -129,15 +132,19 @@ int main(int argc, char*argv[])
 
     //
 
-    auto curve_data = CubicCurve::NewCurveData();
+    auto curve_data_cubic = CubicCurve::NewCurveData();
     auto curve_data_linear = LinearCurve::NewCurveData();
+    auto curve_data_quadratic = QuadraticCurve::NewCurveData();
 
-    CubicCurve cubic_curve (curve_data.get());
+    CubicCurve cubic_curve (curve_data_linear.get());
     LinearCurve linear_curve (curve_data_linear.get());
+    QuadraticCurve quadratic_curve (curve_data_linear.get());
+    //LinearCurve linear_curve (curve_data_linear.get());
 
     DrawCurve draw_cubic_curve;
     DrawCurve d_linear_curve;
 
+    //ICurve * active_curve = &quadratic_curve;
     //ICurve * active_curve = &cubic_curve;
     ICurve * active_curve = &linear_curve;
 
@@ -216,11 +223,22 @@ int main(int argc, char*argv[])
                 if (event.key.code == sf::Keyboard::M)
                 {
                     if (curve_type == CURVE_TYPE::LINEAR)
+                    {
+                        active_curve = &quadratic_curve;
                         curve_type = CURVE_TYPE::QUADRATIC;
+                    }
                     else if (curve_type == CURVE_TYPE::QUADRATIC)
+                    {
+                        active_curve = &cubic_curve;
                         curve_type = CURVE_TYPE::CUBIC;
+                    }
                     else // (curve_type == CURVE_TYPE::CUBIC)
+                    {
+                        active_curve = &linear_curve;
                         curve_type = CURVE_TYPE::LINEAR;
+                    }
+
+                    active_curve->ForceInterpolation();
                 }
 
                 if (event.key.code == sf::Keyboard::B)
@@ -279,13 +297,13 @@ int main(int argc, char*argv[])
 
                 // do a simple linear search to see which point has been selected and set the control point if found
                 //for (size_t i=0; i<line_draw_shape.size(); i++)
-                //for (size_t i=0; i<curve_data->pointList.size(); i++)
+                //for (size_t i=0; i<curve_data_cubic->pointList.size(); i++)
                 for (size_t i=0; i<active_curve->GetPointData().size(); i++)
                 {
                     //float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - line_draw_shape[i].position.x);
                     //float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - line_draw_shape[i].position.y);
-                    //float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - curve_data->pointList[i][0]);
-                    //float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - curve_data->pointList[i][1]);
+                    //float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - curve_data_cubic->pointList[i][0]);
+                    //float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - curve_data_cubic->pointList[i][1]);
                     float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_x) - active_curve->GetPointData()[i][0]);
                     float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_y) - active_curve->GetPointData()[i][1]);
 
@@ -295,7 +313,7 @@ int main(int argc, char*argv[])
                         l_mouse_y = mouse_y;
 
                         //last_selected_position = line_draw_shape[i].position;
-                        //last_selected_position = sf::Vector2f(curve_data->pointList[i][0], curve_data->pointList[i][1]);
+                        //last_selected_position = sf::Vector2f(curve_data_cubic->pointList[i][0], curve_data_cubic->pointList[i][1]);
                         last_selected_position = sf::Vector2f(active_curve->GetPointData()[i][0], active_curve->GetPointData()[i][1]);
 
                         //line_draw_shape[control_point].color = sf::Color::Black; // set last control point color back to white
@@ -318,9 +336,12 @@ int main(int argc, char*argv[])
                 }
                 else if (control_key_down && shift_key_down && !found_vertex)
                 {
-                    // add point to an intersecting point on the curve
-                    std::pair<std::array<float, 2>, int32_t> position_index = active_curve->IntersectionOnCurve({static_cast<float>(mouse_x), static_cast<float>(mouse_y)});
-                    active_curve->InsertAnchor(position_index.first, position_index.second);
+                    // add point to an intersecting point on the curve. work/curve types need to match to do an insertion.
+                    if (curve_type == active_curve->WorkCurveType())
+                    {
+                        std::pair<std::array<float, 2>, int32_t> position_index = active_curve->IntersectionOnCurve({static_cast<float>(mouse_x), static_cast<float>(mouse_y)});
+                        active_curve->InsertAnchor(position_index.first, position_index.second);
+                    }
                 }
                 else if (control_key_down && !found_vertex)
                 {
@@ -415,11 +436,26 @@ int main(int argc, char*argv[])
         }
         else if (curve_type == CURVE_TYPE::QUADRATIC)
         {
+#if USE_OLD_CURVES
             if (!draw_quadratic_curve(line_draw_shape, static_cast<float>(curve_samples), window, primitive_type, fill_buffer, hide_points))
             {
                 txt_line_mode_message_render.setString("Need a minimal of 3 points to draw a quadratic bezier curve!");
                 txt_line_mode_message_render.setPosition((WINDOW_WIDTH - (txt_line_mode_message_render.getLocalBounds().width + 2)) / 2, WINDOW_HEIGHT-30);
             }
+#else
+
+            d_linear_curve.HoverAnimation(&quadratic_curve, sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
+            d_linear_curve.SelectedPoint(control_point);
+            d_linear_curve.RenderCurve(&quadratic_curve, window, primitive_type);
+
+            if (control_key_down && shift_key_down)
+            {
+                d_linear_curve.DrawIntersectionPoint(&quadratic_curve, sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y, window);
+            }
+
+            d_linear_curve.DrawPoints(&quadratic_curve, !hide_points, window);
+
+#endif
         }
         else //if (curve_type == CURVE_TYPE::LINEAR)
         {
@@ -456,7 +492,7 @@ int main(int argc, char*argv[])
             int32_t k=0;
             //for (const auto & v : line_draw_shape)
             /*
-            for (const auto & v : curve_data->pointList)
+            for (const auto & v : curve_data_cubic->pointList)
             {
                 //float mouse_object_position_x_relative = std::abs(static_cast<float>(mouse_hover_x) - v.position.x);
                 //float mouse_object_position_y_relative = std::abs(static_cast<float>(mouse_hover_y) - v.position.y);

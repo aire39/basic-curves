@@ -26,6 +26,7 @@ add_executable(basic_bezier_curves
                Curve.h
                CubicCurve.cpp CubicCurve.h
                LinearCurve.cpp LinearCurve.h
+               QuadraticCurve.cpp QuadraticCurve.h
                CurveEffect.cpp CurveEffect.h
         DrawCurve.cpp DrawCurve.h)
 

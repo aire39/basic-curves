@@ -36,7 +36,8 @@ void DrawCurve::HoverAnimation(ICurve* curve, int32_t x, int32_t y)
 
 void DrawCurve::DrawIntersectionPoint(ICurve* curve, int32_t x, int32_t y, sf::RenderWindow & window)
 {
-    if (curve)
+    // The curve needs to exist and work/curve types need to match to do an insertion.
+    if (curve && (curve->CurveType() == curve->WorkCurveType()))
     {
         auto intersect_on_curve = curve->IntersectionOnCurve({(float)x, (float)y});
         auto insert_index = static_cast<int32_t>(intersect_on_curve.second);
@@ -129,8 +130,42 @@ void DrawCurve::DrawPoints(ICurve* curve, bool draw_handles, sf::RenderWindow & 
             const std::vector<std::array<float,2>> & points = curve->GetPointData();
             const std::vector<float> & points_radius = pointRadiusValues;
 
-            for (size_t i=0; i<n_points; i++)
+            size_t start = 0;
+            size_t increment = 1;
+            size_t ignore_count = 0; // ignore every nth point (0 index inclusive)
+
+            if (curve->CurveType() == CURVE_TYPE::CUBIC)
             {
+                if (curve->WorkCurveType() == CURVE_TYPE::LINEAR)
+                {
+                    start = 1;
+                    increment = 3;
+                }
+                else if (curve->WorkCurveType() == CURVE_TYPE::QUADRATIC)
+                {
+                    ignore_count = 3;
+                }
+            }
+            else if (curve->CurveType() == CURVE_TYPE::QUADRATIC)
+            {
+                if (curve->WorkCurveType() == CURVE_TYPE::LINEAR)
+                {
+                    start = 0;
+                    increment = 2;
+                }
+            }
+            else // CURVE_TYPE::LINEAR
+            {
+                // nothing to implement
+            }
+
+            for (size_t i=start; i<n_points; i+=increment)
+            {
+                if ((ignore_count > 0) && ((i % ignore_count) == 0))
+                {
+                    continue;
+                }
+
                 circle_shape.setFillColor(unselectedColor);
                 circle_shape.setOutlineColor(outlineColor);
 

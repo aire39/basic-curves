@@ -5,12 +5,16 @@
 #include <cstdint>
 #include <iostream>
 
-enum class CURVE_TYPE : uint16_t {LINEAR, QUADRATIC, CUBIC};
+enum class CURVE_TYPE : uint16_t {UNKNOWN, LINEAR, QUADRATIC, CUBIC};
 
 inline std::ostream& operator<<(std::ostream& os, const CURVE_TYPE & curve_type)
 {
     switch (curve_type)
     {
+        case CURVE_TYPE::UNKNOWN:
+            os << "unknown";
+            break;
+
         case CURVE_TYPE::LINEAR:
             os << "linear";
             break;
@@ -66,5 +70,7 @@ class ICurve
         virtual std::pair<std::array<float, 2>, uint32_t> IntersectionOnCurve(std::array<float, 2> position) = 0;
         virtual const std::vector<std::array<float, 2>> & GetPointData() = 0;
         virtual const std::vector<std::array<float, 2>> & HandleData() = 0;
+        virtual void ForceInterpolation() = 0;
         virtual CURVE_TYPE CurveType() = 0;
+        virtual CURVE_TYPE WorkCurveType() = 0;
 };

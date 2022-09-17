@@ -45,7 +45,9 @@ class LinearCurve : public ICurve
         const std::vector<std::array<float, 2>> & HandleData() override; // return generated curve handle data points
         const std::vector<std::array<float, 2>> & GetPointData() override;
 
+        void ForceInterpolation() override;
         CURVE_TYPE CurveType() override;
+        CURVE_TYPE WorkCurveType() override;
 
         LinearCurve & operator= (const std::unique_ptr<CurveData> & rhs)
         {

@@ -174,12 +174,306 @@ void CubicCurve::interpolateWithCubicHint()
 
 void CubicCurve::interpolateWithQuadraticHint()
 {
-    std::cerr << "no implementation for curve type " << curveData->curveType << "\n";
-}
+    constexpr size_t min_points = 4;
+    curveList.clear();
+    handleList.clear();
 
+    if (curveData && curveData->pointList.size() >= min_points)
+    {
+        constexpr float t_constrain_beg = 0.0f;
+        constexpr float t_constrain_end = 1.0f;
+
+        float t = t_constrain_beg; // 0 <= t <= 1.0
+
+        float step_size = 1.0f / curveData->smoothFactor; // the larger s is the smoother the line
+        constexpr float epsilon = 0.0001f; // for step size values that may not exactly reach 1.0f
+
+        size_t n_segments = (curveData->pointList.size() / 2) - 1;
+        n_segments = std::clamp(n_segments, size_t(0), std::numeric_limits<size_t>::max());
+
+        for (size_t i=0; i<n_segments; i++)
+        {
+            uint32_t point_a = (i * 2) + 0;
+            uint32_t point_b = (i * 2) + 1;
+            uint32_t point_c = point_b;
+            uint32_t point_d = (i * 2) + 2;
+
+            std::array<float, 2> new_point {};
+
+            while (t <= (t_constrain_end + epsilon))
+            {
+                t = std::min(t, t_constrain_end);
+                new_point = interpolate(curveData->pointList[point_a], curveData->pointList[point_b], curveData->pointList[point_c], curveData->pointList[point_d], t);
+                curveList.push_back(new_point);
+                t += step_size;
+            }
+
+            t = t_constrain_beg;
+
+            if (curveData->areHandlesGenerated)
+            {
+                /*
+                handleList.emplace_back(curveData->pointList[point_a]);
+                handleList.emplace_back(curveData->pointList[point_a-1]);
+
+                handleList.emplace_back(curveData->pointList[point_a]);
+                handleList.emplace_back(curveData->pointList[point_b]);
+
+                handleList.emplace_back(curveData->pointList[point_d]);
+                handleList.emplace_back(curveData->pointList[point_c]);
+
+                handleList.emplace_back(curveData->pointList[point_d]);
+                handleList.emplace_back(curveData->pointList[point_d+1]);
+                */
+
+                //handleList.emplace_back(curveData->pointList[point_a]);
+                //handleList.emplace_back(curveData->pointList[point_a-1]);
+
+                handleList.emplace_back(curveData->pointList[point_a]);
+                handleList.emplace_back(curveData->pointList[point_b]);
+
+                handleList.emplace_back(curveData->pointList[point_b]);
+                handleList.emplace_back(curveData->pointList[point_b]);
+
+                handleList.emplace_back(curveData->pointList[point_d]);
+                handleList.emplace_back(curveData->pointList[point_c]);
+
+                handleList.emplace_back(curveData->pointList[point_d]);
+                handleList.emplace_back(curveData->pointList[point_d+1]);
+            }
+
+        }
+
+        constexpr size_t min_points_for_closed_curve = 4;
+        if (curveData->isCloseLoop && (curveData->pointList.size() > min_points_for_closed_curve))
+        {
+            std::array<float, 2> new_point {};
+
+            if (!curveData->pointList.empty())
+            {
+                uint32_t point_a = curveData->pointList.size()-2;
+                uint32_t point_b = curveData->pointList.size()-1;
+                uint32_t point_c = point_b;
+                uint32_t point_d = 0;
+
+                while (t <= (t_constrain_end + epsilon))
+                {
+                    t = std::min(t, t_constrain_end);
+                    new_point = interpolate(curveData->pointList[point_a], curveData->pointList[point_b], curveData->pointList[point_c], curveData->pointList[point_d], t);
+                    curveList.push_back(new_point);
+                    t += step_size;
+                }
+            }
+        }
+    }
+    else if ((curveData && curveData->pointList.size() >= (min_points-1)) && curveData->areHandlesGenerated)
+    {
+        // draw handles if there are at least 3 points
+        uint32_t point_a = 1;
+        uint32_t point_b = 2;
+
+        handleList.push_back(curveData->pointList[point_a]);
+        handleList.push_back(curveData->pointList[point_a-1]);
+
+        handleList.push_back(curveData->pointList[point_a]);
+        handleList.push_back(curveData->pointList[point_b]);
+    }
+    else
+    {
+        std::cerr << "no curve data available or not enough data points!\n";
+    }
+}
+//NEEDS TO BE DONE
 void CubicCurve::interpolateWithLinearHint()
 {
-    std::cerr << "no implementation for curve type " << curveData->curveType << "\n";
+    constexpr size_t min_points = 2;
+    curveList.clear();
+    handleList.clear();
+
+    if (curveData && curveData->pointList.size() >= min_points)
+    {
+        constexpr float t_constrain_beg = 0.0f;
+        constexpr float t_constrain_end = 1.0f;
+
+        float t = t_constrain_beg; // 0 <= t <= 1.0
+
+        float step_size = 1.0f / curveData->smoothFactor; // the larger s is the smoother the line
+        constexpr float epsilon = 0.0001f; // for step size values that may not exactly reach 1.0f
+
+        size_t n_segments = curveData->pointList.size()- 1;
+        n_segments = std::clamp(n_segments, size_t(0), std::numeric_limits<size_t>::max());
+
+        if (!curveUpscaleData)
+        {
+            curveUpscaleData = std::make_unique<CurveData>(CURVE_TYPE::QUADRATIC);
+        }
+
+        if ((curveUpscaleData->pointList.size() / 3) != curveData->pointList.size())
+        {
+            curveUpscaleData->pointList.clear();
+        }
+
+        for (size_t i=0; i<n_segments; i++)
+        {
+            uint32_t point_a = (i * 1) + 0;
+            uint32_t point_c = point_a;
+
+            uint32_t point_b = (i * 1) + 1;
+            uint32_t point_d = point_b;
+
+            std::array<float, 2> control_point_b {(curveData->pointList[point_b][0] - curveData->pointList[point_a][0]), (curveData->pointList[point_b][1] - curveData->pointList[point_a][1])};
+            float mag = std::sqrt((control_point_b[0]*control_point_b[0]) + (control_point_b[1]*control_point_b[1]));
+            control_point_b[0] = curveData->pointList[point_a][0] + ((control_point_b[0] / mag) * 50.0f);
+            control_point_b[1] = curveData->pointList[point_a][1] + ((control_point_b[1] / mag) * 50.0f);
+
+            std::array<float, 2> control_point_d {(curveData->pointList[point_b][0] - curveData->pointList[point_a][0]), (curveData->pointList[point_b][1] - curveData->pointList[point_a][1])};
+            mag = std::sqrt((control_point_b[0]*control_point_b[0]) + (control_point_b[1]*control_point_b[1]));
+            control_point_d[0] = curveData->pointList[point_a][0] + ((control_point_b[0] / mag) * 50.0f);
+            control_point_d[1] = curveData->pointList[point_a][1] + ((control_point_b[1] / mag) * 50.0f);
+
+            if (curveUpscaleData->pointList.size() >= (curveData->pointList.size() * 2))
+            {
+                curveUpscaleData->pointList[i*2 + 0] = curveData->pointList[point_a];
+                curveUpscaleData->pointList[i*2 + 1] = control_point_b;
+
+                curveUpscaleData->pointList[i*2 + 2] = curveData->pointList[point_c];
+                if (i == (n_segments-1))
+                {
+                    std::array<float, 2> control_point_c {-(curveData->pointList[point_c][0] - curveData->pointList[0][0]), -(curveData->pointList[point_c][1] - curveData->pointList[0][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    curveUpscaleData->pointList[i*2 + 3] = control_point_c;
+                }
+                else
+                {
+                    std::array<float, 2> control_point_c {(curveData->pointList[point_c+1][0] - curveData->pointList[point_c][0]), (curveData->pointList[point_c+1][1] - curveData->pointList[point_c][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    curveUpscaleData->pointList[i*2 + 3] = control_point_c;
+                }
+            }
+            else
+            {
+                if ((i == (n_segments-1)) && (i==0))
+                {
+                    curveUpscaleData->pointList.push_back(curveData->pointList[point_a]);
+                    curveUpscaleData->pointList.push_back(control_point_b);
+                    curveUpscaleData->pointList.push_back(curveData->pointList[point_c]);
+
+                    std::array<float, 2> control_point_c {-(curveData->pointList[point_c][0] - curveData->pointList[0][0]), -(curveData->pointList[point_c][1] - curveData->pointList[0][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    curveUpscaleData->pointList.push_back(control_point_c);
+                }
+                else if (i == (n_segments-1))
+                {
+                    curveUpscaleData->pointList.push_back(curveData->pointList[point_c]);
+
+                    std::array<float, 2> control_point_c {-(curveData->pointList[point_c][0] - curveData->pointList[0][0]), -(curveData->pointList[point_c][1] - curveData->pointList[0][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    curveUpscaleData->pointList.push_back(control_point_c);
+                }
+                else
+                {
+                    curveUpscaleData->pointList.push_back(curveData->pointList[point_a]);
+                    curveUpscaleData->pointList.push_back(control_point_b);
+
+                    curveUpscaleData->pointList.push_back(curveData->pointList[point_c]);
+
+                    std::array<float, 2> control_point_c {(curveData->pointList[point_c+1][0] - curveData->pointList[point_c][0]), (curveData->pointList[point_c+1][1] - curveData->pointList[point_c][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    curveUpscaleData->pointList.push_back(control_point_c);
+                }
+
+            }
+
+            std::array<float, 2> new_point {};
+
+            while (t <= (t_constrain_end + epsilon))
+            {
+                t = std::min(t, t_constrain_end);
+                new_point = interpolate(curveData->pointList[point_a], control_point_b, control_point_d, curveData->pointList[point_c], t);
+                curveList.push_back(new_point);
+                t += step_size;
+            }
+
+            t = t_constrain_beg;
+
+            if (curveData->areHandlesGenerated)
+            {
+                handleList.emplace_back(curveData->pointList[point_a]);
+                handleList.emplace_back(control_point_b);
+
+                handleList.emplace_back(curveData->pointList[point_c]);
+
+                if (i == (n_segments-1))
+                {
+                    std::array<float, 2> control_point_c {-(curveData->pointList[point_c][0] - curveData->pointList[0][0]), -(curveData->pointList[point_c][1] - curveData->pointList[0][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    handleList.emplace_back(control_point_c);
+                }
+                else
+                {
+                    std::array<float, 2> control_point_c {(curveData->pointList[point_c+1][0] - curveData->pointList[point_c][0]), (curveData->pointList[point_c+1][1] - curveData->pointList[point_c][1])};
+                    mag = std::sqrt((control_point_c[0]*control_point_c[0]) + (control_point_c[1]*control_point_c[1]));
+                    control_point_c[0] = curveData->pointList[point_c][0] + ((control_point_c[0] / mag) * 50.0f);
+                    control_point_c[1] = curveData->pointList[point_c][1] + ((control_point_c[1] / mag) * 50.0f);
+                    handleList.emplace_back(control_point_c);
+                }
+            }
+
+        }
+
+        constexpr size_t min_points_for_closed_curve = 4;
+        if (curveData->isCloseLoop && (curveData->pointList.size() > min_points_for_closed_curve))
+        {
+            /*
+            std::array<float, 2> new_point {};
+
+            if (!curveData->pointList.empty())
+            {
+                uint32_t point_a = curveData->pointList.size()-2;
+                uint32_t point_b = curveData->pointList.size()-1;
+                uint32_t point_c = point_b;
+
+                std::array<float, 2> control_point_b {(curveData->pointList[point_b][0] - curveData->pointList[point_a][0]), (curveData->pointList[point_b][1] - curveData->pointList[point_a][1])};
+
+                while (t <= (t_constrain_end + epsilon))
+                {
+                    t = std::min(t, t_constrain_end);
+                    new_point = interpolate(curveData->pointList[point_a], curveData->pointList[point_b], curveData->pointList[point_c], t);
+                    curveList.push_back(new_point);
+                    t += step_size;
+                }
+            }
+             */
+        }
+    }
+    else if ((curveData && curveData->pointList.size() >= (min_points)) && curveData->areHandlesGenerated)
+    {
+        // TODO: generate handles data
+        // draw handles if there are at least 3 points
+/*
+        uint32_t point_a = 0;
+        uint32_t point_b = 1;
+
+        handleList.push_back(curveData->pointList[point_a]);
+        handleList.push_back(curveData->pointList[point_b]);
+*/
+    }
+    else
+    {
+        std::cerr << "no curve data available or not enough data points!\n";
+    }
 }
 
 void CubicCurve::AddPoint(std::array<float, 2> point)
@@ -515,9 +809,14 @@ const std::vector<std::array<float, 2>> & CubicCurve::GetPointData()
     return curveData->pointList;
 }
 
+void CubicCurve::ForceInterpolation()
+{
+    InterpolatePoints();
+}
+
 CURVE_TYPE CubicCurve::CurveType()
 {
-    CURVE_TYPE curve_type = CURVE_TYPE::CUBIC;
+    CURVE_TYPE curve_type = CURVE_TYPE::UNKNOWN;
 
     if (curveData)
     {
@@ -525,6 +824,11 @@ CURVE_TYPE CubicCurve::CurveType()
     }
 
     return curve_type;
+}
+
+CURVE_TYPE CubicCurve::WorkCurveType()
+{
+    return CURVE_TYPE::CUBIC;
 }
 
 std::unique_ptr<CurveData> CubicCurve::NewCurveData()

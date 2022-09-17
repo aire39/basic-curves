@@ -11,6 +11,7 @@ class CubicCurve : public ICurve
         static std::array<float, 2> interpolate(const std::array<float, 2>  & a, const std::array<float, 2> & b, const std::array<float, 2> & c, const std::array<float, 2> & d, const float & parametric_t);
 
         CurveData * curveData = nullptr; // curve data block used by this class to generate the curve data
+        std::unique_ptr<CurveData> curveUpscaleData = nullptr; // curve data block used by this class to generate the curve data
 
         std::vector<std::array<float, 2>> curveList; // data that holds the generated curve from CurveData
         std::vector<std::array<float, 2>> handleList; // data that holds the generated curve handles from CurveData
@@ -45,7 +46,9 @@ class CubicCurve : public ICurve
         const std::vector<std::array<float, 2>> & HandleData() override; // return generated curve handle data points
         const std::vector<std::array<float, 2>> & GetPointData() override;
 
+        void ForceInterpolation() override;
         CURVE_TYPE CurveType() override;
+        CURVE_TYPE WorkCurveType() override;
 
         CubicCurve & operator= (const std::unique_ptr<CurveData> & rhs)
         {
